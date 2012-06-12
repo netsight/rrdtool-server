@@ -7,11 +7,10 @@ from datetime import datetime
 import time
 import math
 import subprocess
-
 import socket
+
 IP_ADDRESS = socket.gethostbyname(socket.gethostname())
 QUERY_PREFIX = '/query'
-STATUS_PREFIX = '/status'
 
 def rrd_values(datestring, rrdpath):
     proc = subprocess.Popen(

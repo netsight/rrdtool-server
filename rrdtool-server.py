@@ -14,7 +14,7 @@ QUERY_PREFIX = '/query'
 STATUS_PREFIX = '/status'
 
 def rrd_values(datestring, rrdpath):
-    output = subprocess.check_output(
+    proc = subprocess.Popen(
         ['rrdtool',
          'fetch',
          rrdpath,
@@ -22,8 +22,10 @@ def rrd_values(datestring, rrdpath):
          '-r', '3600',
          '-s', 'midnight %s' % datestring,
          '-e', 's+1day',
-         ]
+         ],
+        stdout=subprocess.PIPE,
         )
+    output = proc.stdout.read()
 
     output_data = []
     for line in output.splitlines():

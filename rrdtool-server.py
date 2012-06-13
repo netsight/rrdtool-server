@@ -12,15 +12,21 @@ import socket
 IP_ADDRESS = socket.gethostbyname(socket.gethostname())
 QUERY_PREFIX = '/query'
 
-def rrd_values(datestring, rrdpath):
+def rrd_values(fromdate, todate, rrdpath):
+    print fromdate, todate
+    start = 'midnight %s' % fromdate
+    end = 'midnight %s' % todate
+    if fromdate == todate:
+        end = 's+1day'
+
     proc = subprocess.Popen(
         ['rrdtool',
          'fetch',
          rrdpath,
          'AVERAGE',
          '-r', '3600',
-         '-s', 'midnight %s' % datestring,
-         '-e', 's+1day',
+         '-s', start,
+         '-e', end,
          ],
         stdout=subprocess.PIPE,
         )
@@ -52,18 +58,24 @@ class Server(BaseHTTPRequestHandler):
             print "Got QUERY request"
             qs = self.path[len(QUERY_PREFIX)+1:]
             qs = cgi.parse_qs(qs)
-            if 'date' not in qs:
+            if 'fromdate' not in qs:
                 self.send_response(500)
                 print "Got request with no date" 
                 return
-            datestring = qs.get('date')[0]
+            fromdate = qs.get('fromdate')[0]
+            if 'todate' not in qs:
+                todate = fromdate
+            else:
+                todate = qs.get('todate')[0]
+
             if 'rrdfile' not in qs:
                 self.send_response(500)
                 print "Got request with no rrdfile" 
                 return
             rrdfile = qs.get('rrdfile')[0]
 
-            data = rrd_values(datestring, 
+            data = rrd_values(fromdate,
+                              todate,
                               os.path.join(self.server.rrdpath, rrdfile))
             self.send_response(200)
             self.send_header("Content-type", "text/plain")

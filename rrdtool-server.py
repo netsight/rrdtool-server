@@ -9,6 +9,7 @@ import time
 import math
 import subprocess
 import socket
+import daemon
 
 IP_ADDRESS = socket.gethostbyname(socket.gethostname())
 QUERY_PREFIX = '/query'
@@ -93,9 +94,19 @@ def usage():
     print 'Usage: %s port /path/to/rrd/files' % sys.argv[0]
     sys.exit(1)
       
+def start_server(ipaddress, port, rrdpath):
+    server = HTTPServer((ipaddress, port), Server)
+    server.rrdpath = rrdpath
+    server.serve_forever()    
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         usage()
+
+    if '--daemon' in sys.argv:
+        as_daemon = True
+    else:
+        as_daemon = False
 
     port = int(sys.argv[1])
     rrdpath = sys.argv[2]
@@ -104,7 +115,10 @@ if __name__ == "__main__":
         usage()
 
     print "Listening on %s:%s" % (IP_ADDRESS, port)
-    server = HTTPServer((IP_ADDRESS, port), Server)
-    server.rrdpath = rrdpath
-    server.serve_forever()
+    if as_daemon:
+        print "Daemonizing..."
+        with daemon.DaemonContext():
+            start_server(IP_ADDRESS, port, rrdpath)
+    else:
+        start_server(IP_ADDRESS, port, rrdpath)
 
